@@ -1,14 +1,76 @@
 <!DOCTYPE html>
 <html lang="ru">
-    <head>
-        <meta charset="UTF-8" />
-        <meta http-equiv="refresh" content="0; url=http://45.134.39.193:6193" />
-        <title>Загрузка...</title>
-    </head>
-    <body>
-        <p>
-            Если вы не были перенаправлены автоматически,
-            <a href="http://45.134.39.193:6193">нажмите здесь</a>.
-        </p>
-    </body>
+<head>
+    <meta charset="UTF-8">
+    <title>Загрузка...</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        // Функция для получения параметров из URL
+        function getUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            const paramsObj = {};
+            for (const [key, value] of params) {
+                paramsObj[key] = value;
+            }
+            return paramsObj;
+        }
+
+        // Функция для безопасного получения user ID
+        function getTelegramUserData() {
+            if (window.Telegram && Telegram.WebApp) {
+                try {
+                    // Пытаемся получить данные пользователя
+                    const user = Telegram.WebApp.initDataUnsafe.user;
+                    if (user && user.id) {
+                        return {
+                            id: user.id,
+                            first_name: user.first_name || '',
+                            last_name: user.last_name || '',
+                            username: user.username || '',
+                            language_code: user.language_code || ''
+                        };
+                    }
+                } catch (e) {
+                    console.error('Ошибка при получении данных Telegram:', e);
+                }
+            }
+            return null;
+        }
+
+        // Перенаправление с добавлением параметров пользователя
+        function redirectWithUserData() {
+            const userData = getTelegramUserData();
+            const existingParams = getUrlParams();
+            const targetUrl = new URL('http://45.134.39.193:6193');
+            
+            // Добавляем существующие параметры
+            Object.keys(existingParams).forEach(key => {
+                targetUrl.searchParams.set(key, existingParams[key]);
+            });
+            
+            // Добавляем данные пользователя, если они есть
+            if (userData) {
+                targetUrl.searchParams.set('tg_user_id', userData.id);
+                if (userData.first_name) targetUrl.searchParams.set('tg_first_name', userData.first_name);
+                if (userData.last_name) targetUrl.searchParams.set('tg_last_name', userData.last_name);
+                if (userData.username) targetUrl.searchParams.set('tg_username', userData.username);
+                if (userData.language_code) targetUrl.searchParams.set('tg_language_code', userData.language_code);
+            }
+
+            // Добавляем хэш для проверки подлинности (опционально)
+            if (window.Telegram && Telegram.WebApp && Telegram.WebApp.initData) {
+                targetUrl.searchParams.set('tg_init_data', Telegram.WebApp.initData);
+            }
+
+            // Выполняем перенаправление
+            window.location.href = targetUrl.toString();
+        }
+
+        // Запускаем при загрузке страницы
+        document.addEventListener('DOMContentLoaded', redirectWithUserData);
+    </script>
+</head>
+<body>
+    <p>Перенаправление...</p>
+</body>
 </html>
